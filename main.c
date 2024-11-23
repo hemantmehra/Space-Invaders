@@ -69,6 +69,11 @@ int main()
     Vector2 enemy_bullet_speed = {0.0, 5.0};
     Vector2 enemy_size = {40, 35};
     int points = 0;
+    int lives = 3;
+    int approach_speed = 20;
+    bool stop_flag = false;
+    bool pause = false;
+    bool win_condition = true;
 
     Bullet bullets[MAX_BULLET];
     Bullet enemy_bullets[MAX_ENEMY_BULLET];
@@ -89,92 +94,116 @@ int main()
         }
     }
 
-    bool stop_flag = false;
 
     while(!WindowShouldClose()) {
-        for (int i=0; i < MAX_BULLET; i++) {
-            bullets[i].x += bullet_speed.x;
-            bullets[i].y += bullet_speed.y;
 
-            if (bullets[i].y < 0) {
-                bullets[i].alive = false;
+        if (!pause) {
+            for (int i=0; i < MAX_BULLET; i++) {
+                bullets[i].x += bullet_speed.x;
+                bullets[i].y += bullet_speed.y;
+
+                if (bullets[i].y < 0) {
+                    bullets[i].alive = false;
+                }
             }
-        }
 
-        for (int i=0; i < MAX_ENEMY_BULLET; i++) {
-            enemy_bullets[i].x += enemy_bullet_speed.x;
-            enemy_bullets[i].y += enemy_bullet_speed.y;
+            for (int i=0; i < MAX_ENEMY_BULLET; i++) {
+                enemy_bullets[i].x += enemy_bullet_speed.x;
+                enemy_bullets[i].y += enemy_bullet_speed.y;
 
-            if (enemy_bullets[i].y > SCREEN_HEIGHT) {
-                enemy_bullets[i].alive = false;
+                if (enemy_bullets[i].y > SCREEN_HEIGHT) {
+                    enemy_bullets[i].alive = false;
+                }
             }
-        }
 
-        int t = GetRandomValue(0, 50);
-        if (points == MAX_ENEMY_COL * MAX_ENEMY_ROW) stop_flag = true;
-        if (t < 5 && !stop_flag) {
-            int x = GetRandomValue(10, SCREEN_WIDTH - 10);
-            add_enemy_bullet(enemy_bullets, x, 0);
-        }
-
-        if (IsKeyDown(KEY_RIGHT)) {
-            if (ship_x < (SCREEN_WIDTH - ship_width))
-            ship_x += 5;
-        }
-        if (IsKeyDown(KEY_LEFT)) {
-            if (ship_x > 0)
-            ship_x -= 5;
-        }
-
-        if (IsKeyReleased(KEY_SPACE)) {
-            if(add_bullet(bullets, ship_x + ship_width/2, ship_y)) {
-                PlaySound(laser_shot);
+            int t = GetRandomValue(0, 50);
+            if (points == MAX_ENEMY_COL * MAX_ENEMY_ROW) stop_flag = true;
+            if (t < 5 && !stop_flag) {
+                int x = GetRandomValue(10, SCREEN_WIDTH - 10);
+                add_enemy_bullet(enemy_bullets, x, 0);
             }
-            
-        }
 
-        for (int i=0; i < MAX_BULLET; i++) {
-            for (int a=0; a < MAX_ENEMY_ROW; a++) {
-                for (int b=0; b < MAX_ENEMY_COL; b++) {
-                    if (bullets[i].alive && enemy[a][b].alive) {
-                        Rectangle r1 = {bullets[i].x, bullets[i].y, bullet_size.x, bullet_size.y};
-                        Rectangle r2 = {enemy[a][b].x, enemy[a][b].y, enemy_size.x, enemy_size.y};
-                        if (CheckCollisionRecs(r1, r2)) {
-                            bullets[i].alive = false;
-                            enemy[a][b].alive = false;
-                            points++;
-                            PlaySound(explosion);
+            if (stop_flag) pause = true;
+
+            if (IsKeyDown(KEY_RIGHT)) {
+                if (ship_x < (SCREEN_WIDTH - ship_width))
+                ship_x += 5;
+            }
+            if (IsKeyDown(KEY_LEFT)) {
+                if (ship_x > 0)
+                ship_x -= 5;
+            }
+
+            if (IsKeyReleased(KEY_SPACE)) {
+                if(add_bullet(bullets, ship_x + ship_width/2, ship_y)) {
+                    PlaySound(laser_shot);
+                }
+                
+            }
+
+            for (int i=0; i < MAX_BULLET; i++) {
+                for (int a=0; a < MAX_ENEMY_ROW; a++) {
+                    for (int b=0; b < MAX_ENEMY_COL; b++) {
+                        if (bullets[i].alive && enemy[a][b].alive) {
+                            Rectangle r1 = {bullets[i].x, bullets[i].y, bullet_size.x, bullet_size.y};
+                            Rectangle r2 = {enemy[a][b].x, enemy[a][b].y, enemy_size.x, enemy_size.y};
+                            if (CheckCollisionRecs(r1, r2)) {
+                                bullets[i].alive = false;
+                                enemy[a][b].alive = false;
+                                points++;
+                                PlaySound(explosion);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        for (int i=0; i < MAX_ENEMY_BULLET; i++) {
-            if (enemy_bullets[i].alive) {
-                Rectangle r1 = {enemy_bullets[i].x, enemy_bullets[i].y, bullet_size.x, bullet_size.y};
-                Rectangle r2 = {ship_x, ship_y, ship_width, ship_height};
-                if (CheckCollisionRecs(r1, r2)) {
-                    enemy_bullets[i].alive = false;
-                    printf("Hit!!!\n");
+            for (int i=0; i < MAX_ENEMY_BULLET; i++) {
+                if (enemy_bullets[i].alive) {
+                    Rectangle r1 = {enemy_bullets[i].x, enemy_bullets[i].y, bullet_size.x, bullet_size.y};
+                    Rectangle r2 = {ship_x, ship_y, ship_width, ship_height};
+                    if (CheckCollisionRecs(r1, r2)) {
+                        enemy_bullets[i].alive = false;
+                        printf("Hit!!!\n");
+                        lives--;
+                    }
                 }
             }
-        }
 
-        for (int i=0; i < MAX_ENEMY_ROW; i++) {
-            for (int j=0; j < MAX_ENEMY_COL; j++) {
-                enemy[i][j].x -= enemy_dx;
-                enemy[i][j].y -= enemy_dy;
+            for (int i=0; i < MAX_ENEMY_ROW; i++) {
+                for (int j=0; j < MAX_ENEMY_COL; j++) {
+                    enemy[i][j].x -= enemy_dx;
 
-                if (enemy[i][j].x < 0 || enemy[i][j].x > SCREEN_WIDTH) {
-                    enemy_dx *= -1;
+                    if (enemy[i][j].x < 0 || enemy[i][j].x > SCREEN_WIDTH) {
+                        enemy_dx *= -1;
+                        enemy_dy += approach_speed;
+                    }
+
+                    if (enemy[i][j].y + enemy_dy > ship_y) {
+                        pause = true;
+                        win_condition = false;
+                    }
                 }
+            }
+
+            if (lives <= 0) {
+                pause = true;
+                win_condition = false;
             }
         }
 
         BeginDrawing();
             ClearBackground(BLACK);
+            if (pause) {
+                if (win_condition) {
+                    DrawText("YOU WIN!", SCREEN_WIDTH/2-100, SCREEN_HEIGHT/2, 40, GREEN);
+                }
+                else {
+                    DrawText("YOU LOSE!", SCREEN_WIDTH/2-100, SCREEN_HEIGHT/2, 40, RED);
+                }
+            }
             DrawText(TextFormat("POINTS: %d", points), 10, 10, 20, GREEN);
+            DrawText(TextFormat("HEALTH: %d", lives), 150, 10, 20, RED);
             DrawTexture(player, ship_x, ship_y, WHITE);
 
             for (int i=0; i < MAX_BULLET; i++) {
@@ -190,7 +219,7 @@ int main()
             for (int a=0; a < MAX_ENEMY_ROW; a++) {
                 for (int b=0; b < MAX_ENEMY_COL; b++) {
                     if (enemy[a][b].alive)
-                    DrawTexture(yellow_enemy, enemy[a][b].x, enemy[a][b].y, WHITE);
+                    DrawTexture(yellow_enemy, enemy[a][b].x, enemy[a][b].y + enemy_dy, WHITE);
                 }
             }
         EndDrawing();
