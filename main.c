@@ -52,19 +52,22 @@ int main()
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Space Invaders");
     InitAudioDevice();
     SetTargetFPS(60);
+
     Sound laser_shot = LoadSound("assets/laser-shot.mp3");
     Sound explosion = LoadSound("assets/explosion.mp3");
+    Texture2D yellow_enemy = LoadTexture("assets/yellow.png");
+    Texture2D player = LoadTexture("assets/player.png");
 
     int ship_x = SCREEN_WIDTH/2;
     int ship_y = SCREEN_HEIGHT - 50;
-    int ship_width = 50;
-    int ship_height = 10;
+    int ship_width = 60;
+    int ship_height = 30;
     int enemy_dx = 3;
     int enemy_dy = 0;
     Vector2 bullet_size = {4, 8};
     Vector2 bullet_speed = {0.0, -5.0};
     Vector2 enemy_bullet_speed = {0.0, 5.0};
-    Vector2 enemy_size = {40, 20};
+    Vector2 enemy_size = {40, 35};
     int points = 0;
 
     Bullet bullets[MAX_BULLET];
@@ -86,6 +89,8 @@ int main()
         }
     }
 
+    bool stop_flag = false;
+
     while(!WindowShouldClose()) {
         for (int i=0; i < MAX_BULLET; i++) {
             bullets[i].x += bullet_speed.x;
@@ -106,7 +111,8 @@ int main()
         }
 
         int t = GetRandomValue(0, 50);
-        if (t < 5) {
+        if (points == MAX_ENEMY_COL * MAX_ENEMY_ROW) stop_flag = true;
+        if (t < 5 && !stop_flag) {
             int x = GetRandomValue(10, SCREEN_WIDTH - 10);
             add_enemy_bullet(enemy_bullets, x, 0);
         }
@@ -121,7 +127,7 @@ int main()
         }
 
         if (IsKeyReleased(KEY_SPACE)) {
-            if(add_bullet(bullets, ship_x, ship_y)) {
+            if(add_bullet(bullets, ship_x + ship_width/2, ship_y)) {
                 PlaySound(laser_shot);
             }
             
@@ -169,7 +175,7 @@ int main()
         BeginDrawing();
             ClearBackground(BLACK);
             DrawText(TextFormat("POINTS: %d", points), 10, 10, 20, GREEN);
-            DrawRectangle(ship_x, ship_y, ship_width, ship_height, RED);
+            DrawTexture(player, ship_x, ship_y, WHITE);
 
             for (int i=0; i < MAX_BULLET; i++) {
                 if (bullets[i].alive)
@@ -184,7 +190,7 @@ int main()
             for (int a=0; a < MAX_ENEMY_ROW; a++) {
                 for (int b=0; b < MAX_ENEMY_COL; b++) {
                     if (enemy[a][b].alive)
-                    DrawRectangle(enemy[a][b].x, enemy[a][b].y, enemy_size.x, enemy_size.y, BLUE);
+                    DrawTexture(yellow_enemy, enemy[a][b].x, enemy[a][b].y, WHITE);
                 }
             }
         EndDrawing();
@@ -192,5 +198,7 @@ int main()
 
     UnloadSound(explosion);
     UnloadSound(laser_shot);
+    UnloadTexture(yellow_enemy);
+    UnloadTexture(player);
     CloseWindow();
 }
